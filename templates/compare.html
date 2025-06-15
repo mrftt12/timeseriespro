@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Models - TimeSeries Forecasting Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="text-primary-dark mb-3">
+                <i class="fas fa-balance-scale me-2"></i>Model Comparison
+            </h1>
+            
+            <!-- Project Selection -->
+            <div class="data-card">
+                <div class="data-card-body">
+                    <form method="GET" class="row align-items-end">
+                        <div class="col-md-8">
+                            <label for="project_id" class="form-label">Select Project</label>
+                            <select class="form-select" id="project_id" name="project_id" onchange="this.form.submit()">
+                                <option value="">Choose a project to compare models...</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}" {% if project.id == selected_project_id %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if models %}
+    <div class="row">
+        <!-- Comparison Table -->
+        <div class="col-lg-8">
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Performance Comparison
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Model Name</th>
+                                    <th>Type</th>
+                                    <th>RMSE</th>
+                                    <th>MAE</th>
+                                    <th>MAPE (%)</th>
+                                    <th>R² Score</th>
+                                    <th>Training Samples</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for model in models %}
+                                <tr>
+                                    <td class="fw-bold">{{ model.model_name }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if model.model_type == 'arima' %}bg-primary
+                                            {% elif model.model_type == 'linear_regression' %}bg-success
+                                            {% else %}bg-info{% endif %}">
+                                            {{ model.model_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ "%.4f"|format(model.rmse) if model.rmse else 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ "%.4f"|format(model.mae) if model.mae else 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="metric-value">{{ "%.2f"|format(model.mape) if model.mape else 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if model.r2_score %}
+                                            <span class="metric-value 
+                                                {% if model.r2_score > 0.8 %}text-success
+                                                {% elif model.r2_score > 0.6 %}text-warning
+                                                {% else %}text-danger{% endif %}">
+                                                {{ "%.4f"|format(model.r2_score) }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ model.training_samples }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="showModelChart({{ model.id }}, '{{ model.model_name }}')">
+                                                <i class="fas fa-chart-line"></i>
+                                            </button>
+                                            <a href="{{ url_for('export_model', id=model.id) }}" 
+                                               class="btn btn-outline-success">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Summary -->
+        <div class="col-lg-4">
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>Best Performers
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    {% set best_rmse = models|selectattr('rmse')|min(attribute='rmse') %}
+                    {% set best_mae = models|selectattr('mae')|min(attribute='mae') %}
+                    {% set best_r2 = models|selectattr('r2_score')|max(attribute='r2_score') if models|selectattr('r2_score')|list %}
+                    
+                    <div class="performance-item">
+                        <div class="performance-metric">Lowest RMSE</div>
+                        <div class="performance-model">{{ best_rmse.model_name }}</div>
+                        <div class="performance-value text-success">{{ "%.4f"|format(best_rmse.rmse) }}</div>
+                    </div>
+                    
+                    <div class="performance-item">
+                        <div class="performance-metric">Lowest MAE</div>
+                        <div class="performance-model">{{ best_mae.model_name }}</div>
+                        <div class="performance-value text-success">{{ "%.4f"|format(best_mae.mae) }}</div>
+                    </div>
+                    
+                    {% if best_r2 %}
+                    <div class="performance-item">
+                        <div class="performance-metric">Highest R² Score</div>
+                        <div class="performance-model">{{ best_r2.model_name }}</div>
+                        <div class="performance-value text-success">{{ "%.4f"|format(best_r2.r2_score) }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Interpretation Guide
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div class="interpretation-item">
+                        <strong>RMSE (Root Mean Square Error)</strong>
+                        <p class="small text-muted">Lower values indicate better performance. Measures average prediction error.</p>
+                    </div>
+                    
+                    <div class="interpretation-item">
+                        <strong>MAE (Mean Absolute Error)</strong>
+                        <p class="small text-muted">Lower values indicate better performance. Less sensitive to outliers than RMSE.</p>
+                    </div>
+                    
+                    <div class="interpretation-item">
+                        <strong>MAPE (Mean Absolute Percentage Error)</strong>
+                        <p class="small text-muted">Lower values indicate better performance. Expressed as percentage.</p>
+                    </div>
+                    
+                    <div class="interpretation-item">
+                        <strong>R² Score</strong>
+                        <p class="small text-muted">Higher values (closer to 1.0) indicate better fit. Measures explained variance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Charts Comparison -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Performance Metrics Comparison
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div id="metricsComparisonChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            {% if selected_project_id %}
+            <div class="data-card">
+                <div class="data-card-body">
+                    <div class="empty-state">
+                        <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No models found</h5>
+                        <p class="text-muted">The selected project doesn't have any trained models yet.</p>
+                        <a href="{{ url_for('project_detail', id=selected_project_id) }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Go to Project
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="data-card">
+                <div class="data-card-body">
+                    <div class="empty-state">
+                        <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Select a project to compare models</h5>
+                        <p class="text-muted">Choose a project from the dropdown above to view and compare its trained models.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Model Chart Modal -->
+<div class="modal fade" id="chartModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chartModalTitle">Model Forecast Visualization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modelChart" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if models %}
+// Create metrics comparison chart
+document.addEventListener('DOMContentLoaded', function() {
+    const models = {{ models|tojson }};
+    createMetricsComparisonChart(models, 'metricsComparisonChart');
+});
+
+function createMetricsComparisonChart(models, containerId) {
+    const modelNames = models.map(m => m.model_name);
+    const rmseValues = models.map(m => m.rmse || 0);
+    const maeValues = models.map(m => m.mae || 0);
+    const mapeValues = models.map(m => m.mape || 0);
+    
+    const data = [
+        {
+            x: modelNames,
+            y: rmseValues,
+            name: 'RMSE',
+            type: 'bar',
+            marker: {color: '#2E86AB'}
+        },
+        {
+            x: modelNames,
+            y: maeValues,
+            name: 'MAE',
+            type: 'bar',
+            marker: {color: '#A23B72'}
+        },
+        {
+            x: modelNames,
+            y: mapeValues,
+            name: 'MAPE (%)',
+            type: 'bar',
+            marker: {color: '#F18F01'}
+        }
+    ];
+    
+    const layout = {
+        title: '',
+        barmode: 'group',
+        xaxis: {title: 'Models'},
+        yaxis: {title: 'Metric Value'},
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        font: {family: 'Inter, sans-serif'}
+    };
+    
+    Plotly.newPlot(containerId, data, layout, {responsive: true});
+}
+{% endif %}
+
+function showModelChart(modelId, modelName) {
+    document.getElementById('chartModalTitle').textContent = `${modelName} - Forecast Visualization`;
+    
+    fetch(`/model/${modelId}/chart`)
+        .then(response => response.json())
+        .then(data => {
+            createForecastChart(data, 'modelChart');
+            const modal = new bootstrap.Modal(document.getElementById('chartModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+        });
+}
+</script>
+{% endblock %}

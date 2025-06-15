@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}New Project - TimeSeries Forecasting Platform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Create New Forecasting Project
+                    </h4>
+                </div>
+                <div class="data-card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-4">
+                            <label for="project_name" class="form-label">Project Name</label>
+                            <input type="text" class="form-control" id="project_name" name="project_name" required
+                                   placeholder="Enter a descriptive name for your project">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="project_description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="project_description" name="project_description" rows="3"
+                                      placeholder="Brief description of your forecasting project"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="file" class="form-label">Dataset File</label>
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Drag & drop your file here</h5>
+                                    <p class="text-muted">or click to browse</p>
+                                    <p class="small text-muted">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                                </div>
+                                <input type="file" class="form-control d-none" id="file" name="file" 
+                                       accept=".csv,.xlsx,.xls" required>
+                            </div>
+                            <div id="fileInfo" class="mt-2" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-file me-2"></i>
+                                    <span id="fileName"></span>
+                                    <span class="badge bg-primary ms-2" id="fileSize"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>Data Requirements</h6>
+                                <ul class="mb-0">
+                                    <li>Your dataset should contain at least two columns: a date column and a target value column</li>
+                                    <li>Date column should be in a recognizable format (YYYY-MM-DD, MM/DD/YYYY, etc.)</li>
+                                    <li>Target column should contain numeric values</li>
+                                    <li>Minimum 30 data points recommended for reliable forecasting</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-upload me-2"></i>Upload & Create Project
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('file');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Click to upload
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        // Validate file type
+        const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        const allowedExtensions = ['csv', 'xlsx', 'xls'];
+        
+        if (!allowedExtensions.includes(fileExtension)) {
+            alert('Please select a valid file type (CSV or Excel).');
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            return;
+        }
+
+        // Display file info
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+        uploadArea.classList.add('file-selected');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form submission
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

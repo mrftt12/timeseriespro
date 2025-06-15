@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - TimeSeries Forecasting Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1 class="text-primary-dark mb-1">{{ project.name }}</h1>
+                    {% if project.description %}
+                        <p class="text-muted mb-2">{{ project.description }}</p>
+                    {% endif %}
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary-light me-2">
+                            <i class="fas fa-calendar me-1"></i>
+                            Created: {{ project.created_at.strftime('%Y-%m-%d') }}
+                        </span>
+                        {% if project.dataset_filename %}
+                            <span class="badge bg-teal-light">
+                                <i class="fas fa-file me-1"></i>
+                                {{ project.dataset_filename }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" onclick="confirmDelete('project', {{ project.id }}, '{{ project.name }}')">
+                        <i class="fas fa-trash me-2"></i>Delete Project
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if dataset_info %}
+    <div class="row">
+        <!-- Dataset Information -->
+        <div class="col-lg-4">
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database me-2"></i>Dataset Overview
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="metric-small">
+                                <div class="metric-value">{{ dataset_info.shape[0] }}</div>
+                                <div class="metric-label">Rows</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-small">
+                                <div class="metric-value">{{ dataset_info.shape[1] }}</div>
+                                <div class="metric-label">Columns</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-3 mb-2">Columns</h6>
+                    <div class="column-list">
+                        {% for col in dataset_info.columns %}
+                        <div class="column-item">
+                            <span class="column-name">{{ col }}</span>
+                            <span class="badge bg-secondary column-type">{{ dataset_info.dtypes[col] }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Panel -->
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Configuration
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <form method="POST" action="{{ url_for('configure_project', id=project.id) }}">
+                        <div class="mb-3">
+                            <label for="date_column" class="form-label">Date Column</label>
+                            <select class="form-select" id="date_column" name="date_column" required>
+                                <option value="">Select date column...</option>
+                                {% for col in dataset_info.columns %}
+                                <option value="{{ col }}" {% if project.date_column == col %}selected{% endif %}>{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_column" class="form-label">Target Column</label>
+                            <select class="form-select" id="target_column" name="target_column" required>
+                                <option value="">Select target column...</option>
+                                {% for col in dataset_info.columns %}
+                                <option value="{{ col }}" {% if project.target_column == col %}selected{% endif %}>{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-2"></i>Save Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Preview and Models -->
+        <div class="col-lg-8">
+            <!-- Data Preview -->
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Data Preview
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    {% for col in dataset_info.columns %}
+                                    <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in dataset_info.preview %}
+                                <tr>
+                                    {% for col in dataset_info.columns %}
+                                    <td>{{ row[col] }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% if project.date_column and project.target_column %}
+            <!-- Model Training -->
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-brain me-2"></i>Train New Model
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <form method="POST" action="{{ url_for('train_model', id=project.id) }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="model_type" class="form-label">Model Type</label>
+                                <select class="form-select" id="model_type" name="model_type" required>
+                                    <option value="">Select model...</option>
+                                    <option value="arima">ARIMA</option>
+                                    <option value="linear_regression">Linear Regression</option>
+                                    <option value="moving_average">Moving Average</option>
+                                    <option value="random_forest">Random Forest</option>
+                                    <option value="prophet">Prophet</option>
+                                    {% if lightgbm_available %}
+                                    <option value="lightgbm">LightGBM</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="model_name" class="form-label">Model Name</label>
+                                <input type="text" class="form-control" id="model_name" name="model_name" 
+                                       placeholder="Optional custom name">
+                            </div>
+                            <div class="col-md-4" id="ma_window_group" style="display: none;">
+                                <label for="ma_window" class="form-label">Moving Average Window</label>
+                                <input type="number" class="form-control" id="ma_window" name="ma_window" 
+                                       value="7" min="2" max="30">
+                            </div>
+                        </div>
+                        
+                        <!-- Random Forest Parameters -->
+                        <div class="row mt-3" id="rf_params_group" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="rf_n_estimators" class="form-label">Number of Trees</label>
+                                <input type="number" class="form-control" id="rf_n_estimators" name="rf_n_estimators" 
+                                       value="100" min="10" max="500">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="rf_max_depth" class="form-label">Max Depth</label>
+                                <input type="number" class="form-control" id="rf_max_depth" name="rf_max_depth" 
+                                       value="10" min="3" max="50">
+                            </div>
+                        </div>
+                        
+                        <!-- LightGBM Parameters -->
+                        <div class="row mt-3" id="lgb_params_group" style="display: none;">
+                            <div class="col-md-4">
+                                <label for="lgb_num_leaves" class="form-label">Number of Leaves</label>
+                                <input type="number" class="form-control" id="lgb_num_leaves" name="lgb_num_leaves" 
+                                       value="31" min="10" max="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="lgb_learning_rate" class="form-label">Learning Rate</label>
+                                <input type="number" class="form-control" id="lgb_learning_rate" name="lgb_learning_rate" 
+                                       value="0.1" min="0.01" max="0.5" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="lgb_n_estimators" class="form-label">Number of Estimators</label>
+                                <input type="number" class="form-control" id="lgb_n_estimators" name="lgb_n_estimators" 
+                                       value="100" min="10" max="500">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>Train Model
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Trained Models -->
+            <div class="data-card">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Trained Models
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    {% if models %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Model Name</th>
+                                        <th>Type</th>
+                                        <th>RMSE</th>
+                                        <th>MAE</th>
+                                        <th>MAPE</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for model in models %}
+                                    <tr>
+                                        <td class="fw-bold">{{ model.model_name }}</td>
+                                        <td><span class="badge bg-primary">{{ model.model_type }}</span></td>
+                                        <td>{{ "%.4f"|format(model.rmse) if model.rmse else 'N/A' }}</td>
+                                        <td>{{ "%.4f"|format(model.mae) if model.mae else 'N/A' }}</td>
+                                        <td>{{ "%.2f"|format(model.mape) if model.mape else 'N/A' }}%</td>
+                                        <td><small>{{ model.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary" 
+                                                        onclick="showModelChart({{ model.id }})">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </button>
+                                                <a href="{{ url_for('export_model', id=model.id) }}" 
+                                                   class="btn btn-outline-success">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        onclick="confirmDelete('model', {{ model.id }}, '{{ model.model_name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No models trained yet</h5>
+                            <p class="text-muted">Configure your project and train your first model</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Dataset Error</h5>
+                <p class="mb-0">There was an error loading the dataset. Please check the file format and try uploading again.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Model Chart Modal -->
+<div class="modal fade" id="chartModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Model Forecast Visualization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modelChart" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show/hide model parameter inputs based on model type
+document.addEventListener('DOMContentLoaded', function() {
+    const modelTypeSelect = document.getElementById('model_type');
+    if (modelTypeSelect) {
+        modelTypeSelect.addEventListener('change', function() {
+            const maWindowGroup = document.getElementById('ma_window_group');
+            const rfParamsGroup = document.getElementById('rf_params_group');
+            const lgbParamsGroup = document.getElementById('lgb_params_group');
+            
+            // Hide all parameter groups first
+            if (maWindowGroup) maWindowGroup.style.display = 'none';
+            if (rfParamsGroup) rfParamsGroup.style.display = 'none';
+            if (lgbParamsGroup) lgbParamsGroup.style.display = 'none';
+            
+            // Show relevant parameter group based on selection
+            if (this.value === 'moving_average' && maWindowGroup) {
+                maWindowGroup.style.display = 'block';
+            } else if (this.value === 'random_forest' && rfParamsGroup) {
+                rfParamsGroup.style.display = 'block';
+            } else if (this.value === 'lightgbm' && lgbParamsGroup) {
+                lgbParamsGroup.style.display = 'block';
+            }
+        });
+    }
+});
+
+function showModelChart(modelId) {
+    fetch(`/model/${modelId}/chart`)
+        .then(response => response.json())
+        .then(data => {
+            createForecastChart(data, 'modelChart');
+            const modal = new bootstrap.Modal(document.getElementById('chartModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+        });
+}
+
+function confirmDelete(type, id, name) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const message = document.getElementById('deleteMessage');
+    const form = document.getElementById('deleteForm');
+    
+    message.textContent = `Are you sure you want to delete the ${type} "${name}"? This action cannot be undone.`;
+    form.action = `/${type}/${id}/delete`;
+    
+    modal.show();
+}
+</script>
+{% endblock %}
