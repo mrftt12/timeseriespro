@@ -10,7 +10,7 @@ import base64
 from app import app, db
 from models import Project, ModelResult
 from data_processor import DataProcessor
-from forecasting import ForecastingEngine, LIGHTGBM_AVAILABLE
+from forecasting import ForecastingEngine, LIGHTGBM_AVAILABLE, XGBOOST_AVAILABLE, SARIMAX_AVAILABLE, PYTORCH_FORECASTING_AVAILABLE
 
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
@@ -116,7 +116,10 @@ def project_detail(id):
                              project=project, 
                              dataset_info=dataset_info,
                              models=models,
-                             lightgbm_available=LIGHTGBM_AVAILABLE)
+                             lightgbm_available=LIGHTGBM_AVAILABLE,
+                             xgboost_available=XGBOOST_AVAILABLE,
+                             sarimax_available=SARIMAX_AVAILABLE,
+                             pytorch_forecasting_available=PYTORCH_FORECASTING_AVAILABLE)
                              
     except Exception as e:
         flash(f'Error loading dataset: {str(e)}', 'error')
@@ -179,6 +182,23 @@ def train_model(id):
             learning_rate = float(request.form.get('lgb_learning_rate', 0.1))
             n_estimators = int(request.form.get('lgb_n_estimators', 100))
             result = engine.train_lightgbm(num_leaves, learning_rate, n_estimators)
+        elif model_type == 'xgboost':
+            n_estimators = int(request.form.get('xgb_n_estimators', 100))
+            max_depth = int(request.form.get('xgb_max_depth', 6))
+            learning_rate = float(request.form.get('xgb_learning_rate', 0.1))
+            result = engine.train_xgboost(n_estimators, max_depth, learning_rate)
+        elif model_type == 'sarimax':
+            order = tuple(map(int, request.form.get('sarimax_order', '1,1,1').split(',')))
+            seasonal_order = tuple(map(int, request.form.get('sarimax_seasonal_order', '1,1,1,12').split(',')))
+            result = engine.train_sarimax(order, seasonal_order)
+        elif model_type == 'lstm':
+            sequence_length = int(request.form.get('lstm_sequence_length', 30))
+            hidden_units = int(request.form.get('lstm_hidden_units', 50))
+            epochs = int(request.form.get('lstm_epochs', 100))
+            result = engine.train_lstm(sequence_length, hidden_units, epochs)
+        elif model_type == 'nhits':
+            max_epochs = int(request.form.get('nhits_epochs', 100))
+            result = engine.train_nhits(max_epochs=max_epochs)
         else:
             flash('Invalid model type', 'error')
             return redirect(url_for('project_detail', id=id))

@@ -169,6 +169,16 @@
                                     {% if lightgbm_available %}
                                     <option value="lightgbm">LightGBM</option>
                                     {% endif %}
+                                    {% if xgboost_available %}
+                                    <option value="xgboost">XGBoost</option>
+                                    {% endif %}
+                                    {% if sarimax_available %}
+                                    <option value="sarimax">SARIMAX</option>
+                                    {% endif %}
+                                    <option value="lstm">LSTM</option>
+                                    {% if pytorch_forecasting_available %}
+                                    <option value="nhits">NHITS</option>
+                                    {% endif %}
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -212,6 +222,67 @@
                             <div class="col-md-4">
                                 <label for="lgb_n_estimators" class="form-label">Number of Estimators</label>
                                 <input type="number" class="form-control" id="lgb_n_estimators" name="lgb_n_estimators" 
+                                       value="100" min="10" max="500">
+                            </div>
+                        </div>
+                        
+                        <!-- XGBoost Parameters -->
+                        <div class="row mt-3" id="xgb_params_group" style="display: none;">
+                            <div class="col-md-4">
+                                <label for="xgb_n_estimators" class="form-label">Number of Estimators</label>
+                                <input type="number" class="form-control" id="xgb_n_estimators" name="xgb_n_estimators" 
+                                       value="100" min="10" max="500">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="xgb_max_depth" class="form-label">Max Depth</label>
+                                <input type="number" class="form-control" id="xgb_max_depth" name="xgb_max_depth" 
+                                       value="6" min="3" max="20">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="xgb_learning_rate" class="form-label">Learning Rate</label>
+                                <input type="number" class="form-control" id="xgb_learning_rate" name="xgb_learning_rate" 
+                                       value="0.1" min="0.01" max="0.5" step="0.01">
+                            </div>
+                        </div>
+                        
+                        <!-- SARIMAX Parameters -->
+                        <div class="row mt-3" id="sarimax_params_group" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="sarimax_order" class="form-label">ARIMA Order (p,d,q)</label>
+                                <input type="text" class="form-control" id="sarimax_order" name="sarimax_order" 
+                                       value="1,1,1" placeholder="e.g., 1,1,1">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sarimax_seasonal_order" class="form-label">Seasonal Order (P,D,Q,s)</label>
+                                <input type="text" class="form-control" id="sarimax_seasonal_order" name="sarimax_seasonal_order" 
+                                       value="1,1,1,12" placeholder="e.g., 1,1,1,12">
+                            </div>
+                        </div>
+                        
+                        <!-- LSTM Parameters -->
+                        <div class="row mt-3" id="lstm_params_group" style="display: none;">
+                            <div class="col-md-4">
+                                <label for="lstm_sequence_length" class="form-label">Sequence Length</label>
+                                <input type="number" class="form-control" id="lstm_sequence_length" name="lstm_sequence_length" 
+                                       value="30" min="10" max="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="lstm_hidden_units" class="form-label">Hidden Units</label>
+                                <input type="number" class="form-control" id="lstm_hidden_units" name="lstm_hidden_units" 
+                                       value="50" min="10" max="200">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="lstm_epochs" class="form-label">Epochs</label>
+                                <input type="number" class="form-control" id="lstm_epochs" name="lstm_epochs" 
+                                       value="100" min="10" max="500">
+                            </div>
+                        </div>
+                        
+                        <!-- NHITS Parameters -->
+                        <div class="row mt-3" id="nhits_params_group" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="nhits_epochs" class="form-label">Max Epochs</label>
+                                <input type="number" class="form-control" id="nhits_epochs" name="nhits_epochs" 
                                        value="100" min="10" max="500">
                             </div>
                         </div>
@@ -347,11 +418,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const maWindowGroup = document.getElementById('ma_window_group');
             const rfParamsGroup = document.getElementById('rf_params_group');
             const lgbParamsGroup = document.getElementById('lgb_params_group');
+            const xgbParamsGroup = document.getElementById('xgb_params_group');
+            const sarimaxParamsGroup = document.getElementById('sarimax_params_group');
+            const lstmParamsGroup = document.getElementById('lstm_params_group');
+            const nhitsParamsGroup = document.getElementById('nhits_params_group');
             
             // Hide all parameter groups first
             if (maWindowGroup) maWindowGroup.style.display = 'none';
             if (rfParamsGroup) rfParamsGroup.style.display = 'none';
             if (lgbParamsGroup) lgbParamsGroup.style.display = 'none';
+            if (xgbParamsGroup) xgbParamsGroup.style.display = 'none';
+            if (sarimaxParamsGroup) sarimaxParamsGroup.style.display = 'none';
+            if (lstmParamsGroup) lstmParamsGroup.style.display = 'none';
+            if (nhitsParamsGroup) nhitsParamsGroup.style.display = 'none';
             
             // Show relevant parameter group based on selection
             if (this.value === 'moving_average' && maWindowGroup) {
@@ -360,6 +439,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 rfParamsGroup.style.display = 'block';
             } else if (this.value === 'lightgbm' && lgbParamsGroup) {
                 lgbParamsGroup.style.display = 'block';
+            } else if (this.value === 'xgboost' && xgbParamsGroup) {
+                xgbParamsGroup.style.display = 'block';
+            } else if (this.value === 'sarimax' && sarimaxParamsGroup) {
+                sarimaxParamsGroup.style.display = 'block';
+            } else if (this.value === 'lstm' && lstmParamsGroup) {
+                lstmParamsGroup.style.display = 'block';
+            } else if (this.value === 'nhits' && nhitsParamsGroup) {
+                nhitsParamsGroup.style.display = 'block';
             }
         });
     }
