@@ -20,7 +20,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY . .
 
 # Expose port (default Flask port)
-EXPOSE 5000
+EXPOSE 8080
 
 # Set environment variables
 ENV FLASK_APP=main.py
