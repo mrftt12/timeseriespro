@@ -1,0 +1,1 @@
+sudo docker run --rm -p 8080:8080 timeseriespro:1.0.0

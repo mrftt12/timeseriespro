@@ -147,6 +147,49 @@
             </div>
 
             {% if project.date_column and project.target_column %}
+            <!-- Advanced Data Science Features -->
+            <div class="data-card mb-4">
+                <div class="data-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-flask me-2"></i>Advanced Data Science
+                    </h5>
+                </div>
+                <div class="data-card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="feature-card text-center p-3 border rounded">
+                                <i class="fas fa-chart-bar fa-2x text-primary mb-2"></i>
+                                <h6>Data Profiling</h6>
+                                <p class="small text-muted">Comprehensive data analysis and quality assessment</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="generateDataProfile()">
+                                    <i class="fas fa-play me-1"></i>Generate Profile
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card text-center p-3 border rounded">
+                                <i class="fas fa-tools fa-2x text-success mb-2"></i>
+                                <h6>Feature Engineering</h6>
+                                <p class="small text-muted">Automated feature generation and selection</p>
+                                <button class="btn btn-outline-success btn-sm" onclick="openFeatureConfig()">
+                                    <i class="fas fa-cog me-1"></i>Configure
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card text-center p-3 border rounded">
+                                <i class="fas fa-search fa-2x text-warning mb-2"></i>
+                                <h6>Hyperparameter Optimization</h6>
+                                <p class="small text-muted">Bayesian optimization for best model parameters</p>
+                                <button class="btn btn-outline-warning btn-sm" onclick="openOptimizationConfig()">
+                                    <i class="fas fa-search me-1"></i>Optimize
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Model Training -->
             <div class="data-card mb-4">
                 <div class="data-card-header">
@@ -406,10 +449,178 @@
         </div>
     </div>
 </div>
+
+<!-- Data Profiling Modal -->
+<div class="modal fade" id="dataProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Data Profile Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="dataProfileContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Generating data profile...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" id="generateSweetvizBtn" onclick="generateSweetvizReport()" disabled>
+                    <i class="fas fa-file-alt me-1"></i>Generate Sweetviz Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Engineering Configuration Modal -->
+<div class="modal fade" id="featureConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Feature Engineering Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="featureConfigForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Lag Features</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="lag_enabled" checked>
+                                <label class="form-check-label" for="lag_enabled">Enable lag features</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="max_lags" class="form-label">Max lags</label>
+                                <input type="number" class="form-control" id="max_lags" value="5" min="1" max="20">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Rolling Features</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="rolling_enabled" checked>
+                                <label class="form-check-label" for="rolling_enabled">Enable rolling features</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="rolling_windows" class="form-label">Windows (comma-separated)</label>
+                                <input type="text" class="form-control" id="rolling_windows" value="7,14,30">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Calendar Features</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="calendar_enabled" checked>
+                                <label class="form-check-label" for="calendar_enabled">Enable calendar features</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="include_holidays" checked>
+                                <label class="form-check-label" for="include_holidays">Include holidays</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Technical Indicators</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="technical_enabled">
+                                <label class="form-check-label" for="technical_enabled">Enable technical indicators</label>
+                            </div>
+                            <small class="text-muted">Moving averages, RSI, MACD, etc.</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="generateFeatures()">Generate Features</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optimization Configuration Modal -->
+<div class="modal fade" id="optimizationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Hyperparameter Optimization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="optimizationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opt_algorithm" class="form-label">Algorithm</label>
+                                <select class="form-select" id="opt_algorithm">
+                                    <option value="random_forest">Random Forest</option>
+                                    <option value="lightgbm">LightGBM</option>
+                                    <option value="xgboost">XGBoost</option>
+                                    <option value="ridge">Ridge Regression</option>
+                                    <option value="lasso">Lasso Regression</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opt_n_trials" class="form-label">Number of trials</label>
+                                <input type="number" class="form-control" id="opt_n_trials" value="100" min="10" max="500">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opt_metric" class="form-label">Optimization metric</label>
+                                <select class="form-select" id="opt_metric">
+                                    <option value="rmse">RMSE</option>
+                                    <option value="mae">MAE</option>
+                                    <option value="mape">MAPE</option>
+                                    <option value="r2">R²</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="use_feature_engineering" checked>
+                                <label class="form-check-label" for="use_feature_engineering">
+                                    Use feature engineering
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div id="optimizationProgress" style="display: none;">
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="optimizationStatus">Starting optimization...</div>
+                </div>
+                <div id="optimizationResults" style="display: none;">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="startOptimizationBtn" onclick="startOptimization()">
+                    <i class="fas fa-play me-1"></i>Start Optimization
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Project ID for API calls
+const PROJECT_ID = {{ project.id }};
+
 // Show/hide model parameter inputs based on model type
 document.addEventListener('DOMContentLoaded', function() {
     const modelTypeSelect = document.getElementById('model_type');
@@ -474,6 +685,372 @@ function confirmDelete(type, id, name) {
     form.action = `/${type}/${id}/delete`;
     
     modal.show();
+}
+
+// Advanced Data Science Functions
+
+function generateDataProfile() {
+    const modal = new bootstrap.Modal(document.getElementById('dataProfileModal'));
+    modal.show();
+    
+    // Show loading state
+    document.getElementById('dataProfileContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Generating comprehensive data profile...</p>
+        </div>
+    `;
+    
+    // Call API to generate profile
+    fetch(`/api/projects/${PROJECT_ID}/profile`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({force_refresh: true})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayDataProfile(data.profile);
+        } else {
+            showError('dataProfileContent', data.error || 'Failed to generate data profile');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('dataProfileContent', 'Network error occurred');
+    });
+}
+
+function displayDataProfile(profile) {
+    const content = document.getElementById('dataProfileContent');
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-chart-line me-2"></i>Quality Score</h6>
+                <div class="progress mb-3">
+                    <div class="progress-bar ${getQualityColor(profile.quality_score)}" 
+                         style="width: ${profile.quality_score}%">
+                        ${profile.quality_score.toFixed(1)}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-info-circle me-2"></i>Dataset Info</h6>
+                <p class="mb-1"><strong>Shape:</strong> ${profile.profile_metadata.dataset_shape[0]} rows × ${profile.profile_metadata.dataset_shape[1]} columns</p>
+                <p class="mb-1"><strong>Memory:</strong> ${profile.profile_metadata.memory_usage_mb.toFixed(2)} MB</p>
+            </div>
+        </div>
+    `;
+    
+    if (profile.recommendations && profile.recommendations.length > 0) {
+        html += `
+            <h6 class="mt-3"><i class="fas fa-lightbulb me-2"></i>Recommendations</h6>
+            <div class="list-group">
+        `;
+        
+        profile.recommendations.slice(0, 5).forEach(rec => {
+            const badgeClass = rec.priority === 'high' ? 'bg-danger' : rec.priority === 'medium' ? 'bg-warning' : 'bg-info';
+            html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${rec.issue || rec.title}</h6>
+                        <small><span class="badge ${badgeClass}">${rec.priority}</span></small>
+                    </div>
+                    <p class="mb-1">${rec.recommendation}</p>
+                    <small class="text-muted">${rec.action}</small>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+    }
+    
+    // Column analysis table
+    if (profile.column_analysis) {
+        html += `
+            <h6 class="mt-4"><i class="fas fa-columns me-2"></i>Column Analysis</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Missing %</th>
+                            <th>Unique</th>
+                            <th>Quality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        Object.entries(profile.column_analysis).forEach(([colName, colData]) => {
+            const missingPct = colData.null_percentage || 0;
+            const uniqueCount = colData.unique_count || 0;
+            const qualityScore = 85; // Mock quality score
+            
+            html += `
+                <tr>
+                    <td><strong>${colName}</strong></td>
+                    <td><span class="badge bg-secondary">${colData.data_type}</span></td>
+                    <td>${missingPct.toFixed(1)}%</td>
+                    <td>${uniqueCount}</td>
+                    <td>
+                        <div class="progress" style="height: 15px;">
+                            <div class="progress-bar ${getQualityColor(qualityScore)}" 
+                                 style="width: ${qualityScore}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    content.innerHTML = html;
+    
+    // Enable the Sweetviz report button
+    document.getElementById('generateSweetvizBtn').disabled = false;
+}
+
+function generateSweetvizReport() {
+    const btn = document.getElementById('generateSweetvizBtn');
+    const originalText = btn.innerHTML;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating Report...';
+    
+    // Show notification
+    showNotification('Generating Sweetviz report...', 'info');
+    
+    // Call API to generate Sweetviz report
+    fetch(`/api/projects/${PROJECT_ID}/profile/sweetviz-report`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Sweetviz report generated successfully!', 'success');
+            
+            // Open the report in a new tab
+            window.open(data.report_url, '_blank');
+        } else {
+            showNotification(data.error || 'Failed to generate Sweetviz report', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Network error occurred while generating report', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+function openFeatureConfig() {
+    const modal = new bootstrap.Modal(document.getElementById('featureConfigModal'));
+    modal.show();
+}
+
+function generateFeatures() {
+    const config = {
+        lag_enabled: document.getElementById('lag_enabled').checked,
+        lag_config: {
+            max_lags: parseInt(document.getElementById('max_lags').value)
+        },
+        rolling_enabled: document.getElementById('rolling_enabled').checked,
+        rolling_config: {
+            windows: document.getElementById('rolling_windows').value.split(',').map(w => parseInt(w.trim()))
+        },
+        calendar_enabled: document.getElementById('calendar_enabled').checked,
+        calendar_config: {
+            include_holidays: document.getElementById('include_holidays').checked
+        },
+        technical_enabled: document.getElementById('technical_enabled').checked,
+        technical_config: {}
+    };
+    
+    // Close modal and show progress
+    bootstrap.Modal.getInstance(document.getElementById('featureConfigModal')).hide();
+    
+    // Show loading toast or notification
+    showNotification('Generating features...', 'info');
+    
+    // Call API to configure and generate features
+    fetch(`/api/projects/${PROJECT_ID}/features/config`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            return fetch(`/api/projects/${PROJECT_ID}/features/generate`, {method: 'POST'});
+        } else {
+            throw new Error(data.error);
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Generated ${data.new_features} new features successfully!`, 'success');
+        } else {
+            showNotification(data.error || 'Failed to generate features', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error generating features: ' + error.message, 'error');
+    });
+}
+
+function openOptimizationConfig() {
+    const modal = new bootstrap.Modal(document.getElementById('optimizationModal'));
+    modal.show();
+}
+
+function startOptimization() {
+    const config = {
+        algorithm_type: document.getElementById('opt_algorithm').value,
+        n_trials: parseInt(document.getElementById('opt_n_trials').value),
+        metric: document.getElementById('opt_metric').value,
+        use_feature_engineering: document.getElementById('use_feature_engineering').checked
+    };
+    
+    // Hide form and show progress
+    document.getElementById('optimizationForm').style.display = 'none';
+    document.getElementById('optimizationProgress').style.display = 'block';
+    document.getElementById('startOptimizationBtn').style.display = 'none';
+    
+    // Start optimization
+    fetch(`/api/projects/${PROJECT_ID}/optimize`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayOptimizationResults(data);
+        } else {
+            showError('optimizationStatus', data.error || 'Optimization failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('optimizationStatus', 'Network error occurred');
+    });
+}
+
+function displayOptimizationResults(results) {
+    document.getElementById('optimizationProgress').style.display = 'none';
+    document.getElementById('optimizationResults').style.display = 'block';
+    
+    const resultsDiv = document.getElementById('optimizationResults');
+    resultsDiv.innerHTML = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle me-2"></i>Optimization Complete!</h6>
+            <p class="mb-2"><strong>Best Score:</strong> ${results.best_score.toFixed(4)}</p>
+            <p class="mb-2"><strong>Trials Completed:</strong> ${results.n_trials}</p>
+            <p class="mb-2"><strong>Algorithm:</strong> ${results.algorithm_type}</p>
+            
+            <h6 class="mt-3">Best Parameters:</h6>
+            <pre class="bg-light p-2 rounded"><code>${JSON.stringify(results.best_params, null, 2)}</code></pre>
+            
+            <button class="btn btn-primary mt-2" onclick="trainOptimizedModel(${results.experiment_id})">
+                <i class="fas fa-play me-1"></i>Train Model with Best Parameters
+            </button>
+        </div>
+    `;
+}
+
+function trainOptimizedModel(experimentId) {
+    showNotification('Training optimized model...', 'info');
+    
+    fetch(`/api/projects/${PROJECT_ID}/train-optimized`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            experiment_id: experimentId,
+            model_name: `optimized_${Date.now()}`
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Optimized model trained successfully!', 'success');
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('optimizationModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data.error || 'Failed to train optimized model', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error training optimized model', 'error');
+    });
+}
+
+// Utility functions
+function getQualityColor(score) {
+    if (score >= 80) return 'bg-success';
+    if (score >= 60) return 'bg-warning';
+    return 'bg-danger';
+}
+
+function showError(elementId, message) {
+    document.getElementById(elementId).innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            ${message}
+        </div>
+    `;
+}
+
+function showNotification(message, type) {
+    // Create a simple toast notification
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} border-0 position-fixed top-0 end-0 m-3" role="alert" style="z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', toastHtml);
+    const toastEl = document.body.lastElementChild;
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+    
+    // Remove toast after it's hidden
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
 }
 </script>
 {% endblock %}

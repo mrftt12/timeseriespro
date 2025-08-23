@@ -37,6 +37,14 @@ with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import models  # noqa: F401
     db.create_all()
+    
+    # Run database migrations for advanced features
+    try:
+        from migrations import run_migrations
+        run_migrations()
+    except Exception as e:
+        print(f"Warning: Migration failed: {str(e)}")
+        # Don't crash the app if migrations fail
 
 # Import routes after app initialization
 import routes  # noqa: F401
