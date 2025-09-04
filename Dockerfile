@@ -24,10 +24,10 @@ RUN mkdir -p uploads instance static/reports
 # Set environment variables
 ENV FLASK_APP=main.py
 ENV FLASK_ENV=production
-ENV PORT=8080
+ENV PORT=80
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
 # Run the application with Gunicorn
 CMD ["gunicorn", "-c", "gunicorn.conf.py", "main:app"]
